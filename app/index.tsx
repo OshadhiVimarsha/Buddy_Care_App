@@ -1,15 +1,21 @@
-import { View, Text } from "react-native"
-import React from "react"
-import "./../global.css" // nativewind styles import
+// app/index.tsx
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
+import { View, ActivityIndicator } from "react-native";
 
 const Index = () => {
-  return (
-    <View className="flex-1 bg-[#f2f2f4] justify-center items-center">
-      <Text className="text-3xl font-bold text-cyan-500">
-        Buddy Care App
-      </Text>
-    </View>
-  )
-}
+  const router = useRouter();
 
-export default Index
+  useEffect(() => {
+    // 👇 app start → go to welcome page
+    router.replace("/welcome");
+  }, []);
+
+  return (
+    <View className="flex-1 justify-center items-center bg-white">
+      <ActivityIndicator size="large" color="#06b6d4" />
+    </View>
+  );
+};
+
+export default Index;
