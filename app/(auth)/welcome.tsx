@@ -52,7 +52,7 @@ const Welcome = () => {
     Animated.sequence([
       Animated.timing(buttonScale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
       Animated.timing(buttonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start(() => router.push("/"))
+    ]).start(() => router.push("/login"))
   }
 
   
@@ -87,7 +87,6 @@ const Welcome = () => {
         style={{
           width: 400,
           height: 500,
-          bottom: -30,
           borderRadius: 40,
           marginBottom: 30,
           transform: [{ scale: imageScale }],
