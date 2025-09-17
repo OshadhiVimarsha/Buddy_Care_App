@@ -1,21 +1,29 @@
-// app/index.tsx
-import { useEffect } from "react";
-import { useRouter } from "expo-router";
-import { View, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native"
+import React, { useEffect } from "react"
+import { useRouter } from "expo-router"
+import { useAuth } from "@/context/AuthContext"
 
 const Index = () => {
-  const router = useRouter();
+  const router = useRouter()
+  const { user, loading } = useAuth()
+  console.log("User data : ", user)
 
   useEffect(() => {
-    // 👇 app start → go to welcome page
-    router.replace("/welcome");
-  }, []);
+    if (!loading) {
+      if (user) router.replace("/home")
+      else router.replace("/welcome")
+    }
+  }, [user, loading])
 
-  return (
-    <View className="flex-1 justify-center items-center bg-white">
-      <ActivityIndicator size="large" color="#06b6d4" />
-    </View>
-  );
-};
+  if (loading) {
+    return (
+      <View className="flex-1 w-full justify-center align-items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    )
+  }
 
-export default Index;
+  return null
+}
+
+export default Index
