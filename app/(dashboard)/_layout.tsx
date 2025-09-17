@@ -5,17 +5,17 @@ import { MaterialIcons } from "@expo/vector-icons"
 
 const tabs = [
   { label: "Home", name: "home", icon: "home-filled" },
-  { label: "Reminders", name: "reminders", icon: "check-circle" },
-  { label: "Pets", name: "Pets", icon: "person" },
+  { label: "Reminders", name: "reminder", icon: "alarm" },
+  { label: "Pets", name: "Pets", icon: "pets" },
   { label: "Settings", name: "settings", icon: "settings" },
-  { label: "weight", name: "weight", icon: "settings" }
+  { label: "weight", name: "weight", icon: "fitness-center" }
 ] as const
 
 const DashboardLayout = () => {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#007AFF",
+        tabBarActiveTintColor: "#28b8cbff",
         tabBarInactiveTintColor: "#999",
         headerShown: false,
         tabBarStyle: {
