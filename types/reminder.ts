@@ -5,4 +5,5 @@ export interface Reminder {
   description: string;
   date: string;
   time: string;
+  notificationId?: string;
 }
