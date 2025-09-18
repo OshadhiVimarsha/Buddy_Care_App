@@ -1,41 +1,24 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native"
-import React, { useEffect } from "react"
-import { useRouter } from "expo-router"
-import { useAuth } from "@/context/AuthContext"
-import { Appearance, useColorScheme } from 'react-native';
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
+import { View, ActivityIndicator } from "react-native";
 
 const Index = () => {
-  const router = useRouter()
-  const { user, loading } = useAuth()
-  console.log("User data : ", user)
-
-  function MyComponent() {
-  let colorScheme = useColorScheme();
-
-  if (colorScheme === 'dark') {
-    // render some dark thing
-  } else {
-    // render some light thing
-  }
-}
-
+  const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (user) router.replace("/home")
-      else router.replace("/welcome")
-    }
-  }, [user, loading])
+    // Delay කරන්න, Root Layout mount වෙනකොට පසු navigate කරන්න
+    const timeout = setTimeout(() => {
+      router.push("/welcome"); // replace → push කරන්න පුළුවන්
+    }, 0);
 
-  if (loading) {
-    return (
-      <View className="flex-1 w-full justify-center align-items-center">
-        <ActivityIndicator size="large" />
-      </View>
-    )
-  }
+    return () => clearTimeout(timeout);
+  }, []);
 
-  return null
-}
+  return (
+    <View className="flex-1 justify-center items-center bg-white">
+      <ActivityIndicator size="large" color="#06b6d4" />
+    </View>
+  );
+};
 
-export default Index
+export default Index;

@@ -1,5 +1,5 @@
 // services/petProfileService.ts
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase"; // firebase config file එක
 
 export type PetProfile = {
@@ -38,4 +38,20 @@ export const updatePetProfile = async (id: string, pet: Partial<PetProfile>) => 
 export const deletePetProfile = async (id: string) => {
   const docRef = doc(db, "petProfiles", id);
   await deleteDoc(docRef);
+};
+
+export const getPetById = async (id: string): Promise<PetProfile | null> => {
+  try {
+    const docRef = doc(db, "petProfiles", id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as PetProfile;
+    } else {
+      return null; // document එක නොතිබේ නම්
+    }
+  } catch (error) {
+    console.error("Error fetching pet:", error);
+    return null;
+  }
 };

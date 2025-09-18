@@ -203,7 +203,7 @@ const PetsScreen = () => {
           }}
         >
           <View className="flex-row items-center">
-            {/* Pet Avatar with Enhanced Styling */}
+            {/* Pet Avatar  Styling */}
             <View className="relative">
               {pet.photo ? (
                 <>
@@ -215,10 +215,9 @@ const PetsScreen = () => {
                       shadowOffset: { width: 0, height: 8 },
                       shadowOpacity: 0.3,
                       shadowRadius: 16,
-                      elevation: 8,
+                      
                     }}
                   />
-                  <View className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white" />
                 </>
               ) : (
                 <>
@@ -314,7 +313,7 @@ const PetsScreen = () => {
               <View className="flex-row items-center">
                 <PawPrint size={16} color="white" />
                 <Text className="text-white/90 ml-2 font-medium">
-                  Manage your lovely companions
+                  Manage your lovely pets
                 </Text>
               </View>
             </View>
@@ -327,7 +326,7 @@ const PetsScreen = () => {
 
           {/* Enhanced Search Bar */}
           <View 
-            className="flex-row items-center bg-white/95 rounded-2xl px-5 py-4 mt-6 border border-white/50"
+            className="flex-row items-center bg-white/95 rounded-2xl px-5 py-2 mt-2 border border-white/50"
             style={{
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 8 },
@@ -336,7 +335,7 @@ const PetsScreen = () => {
               elevation: 8,
             }}
           >
-            <View className="bg-cyan-100 p-2 rounded-xl mr-3">
+            <View className=" p-2 rounded-xl mr-3">
               <Search size={20} color="#0891b2" />
             </View>
             <TextInput
@@ -432,13 +431,10 @@ const PetsScreen = () => {
       >
         <LinearGradient
           colors={['#0891b2', '#06b6d4']}
-          className="rounded-full p-5 border-4 border-white"
+          className="rounded-full p-5"
         >
           <Plus color="white" size={28} />
         </LinearGradient>
-        
-        {/* Glow ring */}
-        <View className="absolute -inset-2 rounded-full border-2 border-cyan-200/50" />
       </TouchableOpacity>
 
       {/* Enhanced Modal */}
@@ -633,7 +629,7 @@ const PetsScreen = () => {
               <View className="flex-row justify-between mt-8 space-x-3">
                 <TouchableOpacity
                   onPress={resetForm}
-                  className="flex-1 bg-gray-100 rounded-2xl py-4"
+                  className="flex-1 bg-gray-100 rounded-2xl py-4 right-1"
                   style={{
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
@@ -643,6 +639,21 @@ const PetsScreen = () => {
                   }}
                 >
                   <Text className="text-center text-gray-700 font-bold text-lg">Cancel</Text>
+                  
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleAddPet} // save function
+                  className="flex-1 bg-cyan-500 rounded-2xl py-4 left-1"
+                  style={{
+                    shadowColor: '#0891b2',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  }}
+                >
+                  <Text className="text-center text-white font-bold text-lg">Save</Text>
                 </TouchableOpacity>
               </View> 
             </LinearGradient>
