@@ -115,7 +115,7 @@ const PetsScreen = () => {
       age: years + (months / 12),
       photo: photo || undefined,
       gender: gender || undefined,
-      birthdate: birthdate || undefined,
+      birthDate: birthdate || undefined,
       adoptionDate: adoptionDate || undefined,
       healthInfo: { weightHistory: [], allergies: [], conditions: [] },
       vetVisits: [],

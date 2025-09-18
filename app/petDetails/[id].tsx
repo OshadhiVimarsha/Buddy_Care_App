@@ -922,7 +922,7 @@ const PetDetailsScreen = () => {
           >
             <View className="flex-row items-center justify-between mt-8">
               <TouchableOpacity
-                onPress={() => router.back()}
+                onPress={() => router.push("/pets")}
                 className="bg-white/20 p-3 rounded-2xl border border-white/30"
               >
                 <ArrowLeft color="white" size={24} />
@@ -1037,11 +1037,11 @@ const PetDetailsScreen = () => {
                       </View>
                     </View>
                   )}
-                  {pet.birthdate && (
+                  {pet.birthDate && (
                     <View className="flex-row justify-between items-center mt-2">
                       <Text className="text-gray-600 font-medium">Birthdate -</Text>
                       <View className="bg-blue-100 px-3 py-1 rounded-full">
-                        <Text className="text-blue-700 font-bold">{pet.birthdate}</Text>
+                        <Text className="text-blue-700 font-bold">{pet.birthDate}</Text>
                       </View>
                     </View>
                   )}
