@@ -6,10 +6,9 @@ import {
   ScrollView,
   Image,
   Modal,
-  Alert,
   Animated,
   Dimensions,
-} from "react-native"; 
+} from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { PawPrint, Plus, Trash2, Edit2, Search, Eye, Heart, Star, Calendar } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,7 +21,100 @@ import {
 } from "@/services/petProfileService";
 import { PetProfile } from "@/types/petProfile";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
+
+// Custom Alert Component
+const CustomAlert = ({
+  visible,
+  title,
+  message,
+  buttons,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  buttons: { text: string; onPress: () => void; style?: string }[];
+  onClose: () => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-black/60 justify-center items-center">
+        <Animated.View
+          style={{
+            transform: [{ scale: scaleAnim }],
+            width: width * 0.8,
+            maxWidth: 400,
+          }}
+        >
+          <LinearGradient
+            colors={["#ffffff", "#f8fafc"]}
+            className="rounded-3xl p-8 border border-cyan-200"
+            style={{
+              shadowColor: "#0891b2",
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.3,
+              shadowRadius: 20,
+              elevation: 12,
+            }}
+          >
+            <Text className="text-2xl font-bold text-gray-800 mb-4 text-center">
+              {title}
+            </Text>
+            <Text className="text-gray-600 text-center mb-6">{message}</Text>
+            <View className="flex-row justify-between space-x-3">
+              {buttons.map((button, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    button.onPress();
+                    onClose();
+                  }}
+                  className={`flex-1 rounded-2xl py-4 ${
+                    button.style === "cancel" ? "bg-gray-100" : "bg-cyan-500"
+                  }`}
+                  style={{
+                    shadowColor: button.style === "cancel" ? "#000" : "#0891b2",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  }}
+                >
+                  <Text
+                    className={`text-center font-bold text-lg ${
+                      button.style === "cancel" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    {button.text}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
 
 const PetsScreen = () => {
   const [pets, setPets] = useState<PetProfile[]>([]);
@@ -39,19 +131,37 @@ const PetsScreen = () => {
   const [birthdate, setBirthdate] = useState("");
   const [adoptionDate, setAdoptionDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    buttons: { text: string; onPress: () => void; style?: string }[];
+  }>({
+    title: "",
+    message: "",
+    buttons: [],
+  });
 
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons: { text: string; onPress: () => void; style?: string }[]
+  ) => {
+    setAlertConfig({ title, message, buttons });
+    setAlertVisible(true);
+  };
+
   const fetchPets = async () => {
     setIsLoading(true);
     try {
       const data = await getAllPetProfiles();
       setPets(data);
-      
-      // Animate pets list
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -71,7 +181,9 @@ const PetsScreen = () => {
         }),
       ]).start();
     } catch {
-      Alert.alert("Error", "Failed to fetch pets.");
+      showAlert("Error", "Failed to fetch pets.", [
+        { text: "OK", onPress: () => {} },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +209,9 @@ const PetsScreen = () => {
 
   const handleAddPet = async () => {
     if (!name || !breed) {
-      Alert.alert("Warning", "Name and Breed are required!");
+      showAlert("Warning", "Name and Breed are required!", [
+        { text: "OK", onPress: () => {} },
+      ]);
       return;
     }
 
@@ -105,14 +219,16 @@ const PetsScreen = () => {
     const months = parseInt(ageMonths) || 0;
 
     if ((isNaN(years) || years < 0) || (isNaN(months) || months < 0 || months > 11)) {
-      Alert.alert("Warning", "Enter a valid age (years and months).");
+      showAlert("Warning", "Enter a valid age (years and months).", [
+        { text: "OK", onPress: () => {} },
+      ]);
       return;
     }
 
     const newPet: PetProfile = {
       name,
       breed,
-      age: years + (months / 12),
+      age: years + months / 12,
       photo: photo || undefined,
       gender: gender || undefined,
       birthDate: birthdate || undefined,
@@ -126,11 +242,15 @@ const PetsScreen = () => {
     try {
       setIsLoading(true);
       await createPetProfile(newPet);
-      Alert.alert("Success", "Pet added successfully!");
+      showAlert("Success", "Pet added successfully!", [
+        { text: "OK", onPress: () => {} },
+      ]);
       resetForm();
       fetchPets();
     } catch {
-      Alert.alert("Error", "Failed to add pet.");
+      showAlert("Error", "Failed to add pet.", [
+        { text: "OK", onPress: () => {} },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -150,11 +270,11 @@ const PetsScreen = () => {
     const months = Math.round((age - years) * 12);
     let display = "";
     if (years > 0) {
-      display += `${years} yr${years > 1 ? 's' : ''}`;
+      display += `${years} yr${years > 1 ? "s" : ""}`;
     }
     if (months > 0) {
       if (display.length > 0) display += " ";
-      display += `${months} mo${months > 1 ? 's' : ''}`;
+      display += `${months} mo${months > 1 ? "s" : ""}`;
     }
     return display.trim() || "0 mos";
   };
@@ -192,10 +312,10 @@ const PetsScreen = () => {
         }}
       >
         <LinearGradient
-          colors={['#ffffff', '#f8fafc']}
+          colors={["#ffffff", "#f8fafc"]}
           className="rounded-3xl p-6 mb-6 border border-cyan-100"
           style={{
-            shadowColor: '#0891b2',
+            shadowColor: "#0891b2",
             shadowOffset: { width: 0, height: 12 },
             shadowOpacity: 0.15,
             shadowRadius: 24,
@@ -203,29 +323,25 @@ const PetsScreen = () => {
           }}
         >
           <View className="flex-row items-center">
-            {/* Pet Avatar  Styling */}
             <View className="relative">
               {pet.photo ? (
-                <>
-                  <Image
-                    source={{ uri: pet.photo }}
-                    className="w-20 h-20 rounded-full border-4 border-white"
-                    style={{
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 8 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 16,
-                      
-                    }}
-                  />
-                </>
+                <Image
+                  source={{ uri: pet.photo }}
+                  className="w-20 h-20 rounded-full border-4 border-white"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 16,
+                  }}
+                />
               ) : (
                 <>
                   <LinearGradient
-                    colors={['#0891b2', '#06b6d4']}
+                    colors={["#0891b2", "#06b6d4"]}
                     className="w-20 h-20 rounded-full flex items-center justify-center border-4 border-white"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 8 },
                       shadowOpacity: 0.3,
                       shadowRadius: 16,
@@ -237,37 +353,28 @@ const PetsScreen = () => {
                   <View className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white" />
                 </>
               )}
-              
-              {/* Glow ring */}
               <View className="absolute -top-2 -left-2 w-24 h-24 rounded-full border border-cyan-200/50" />
             </View>
 
-            {/* Pet Info */}
             <View className="flex-1 ml-6">
               <Text className="text-2xl font-bold text-gray-800 mb-1">{pet.name}</Text>
-              
-
-              <View className=" px-3 py-1 rounded-full mr-2">
+              <View className="px-3 py-1 rounded-full mr-2">
                 <Text className="text-cyan-700 font-semibold text-sm">
                   {pet.breed || "Unknown Breed"}
                 </Text>
               </View>
-
-              <View className=" px-3 py-1 rounded-full">
-                <Text className="text-purple-700 font-semibold text-sm">
-                  {getDisplayAge(pet.age)}
-                </Text>
+              <View className="px-3 py-1 rounded-full">
+                <Text className="text-purple-700 font-semibold text-sm">{getDisplayAge(pet.age)}</Text>
               </View>
             </View>
 
-            {/* Action Buttons */}
             <View className="flex-col items-center space-y-3">
               {pet.id && (
                 <TouchableOpacity
                   onPress={() => router.push(`/petDetails/${pet.id}`)}
                   className="bg-cyan-500 p-3 rounded-2xl border border-cyan-300"
                   style={{
-                    shadowColor: '#0891b2',
+                    shadowColor: "#0891b2",
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.3,
                     shadowRadius: 8,
@@ -286,56 +393,53 @@ const PetsScreen = () => {
 
   return (
     <LinearGradient colors={["#f0f9ff", "#e0f2fe", "#f8fafc"]} className="flex-1">
-      {/* Enhanced Header */}
       <View className="relative pt-12 pb-8 px-6">
         <LinearGradient
-          colors={['#0891b2', '#06b6d4', '#0891b2']}
+          colors={["#0891b2", "#06b6d4", "#0891b2"]}
           className="absolute inset-0 rounded-b-[50px]"
           style={{
-            shadowColor: '#0891b2',
+            shadowColor: "#0891b2",
             shadowOffset: { width: 0, height: 12 },
             shadowOpacity: 0.4,
             shadowRadius: 24,
             elevation: 12,
           }}
         />
-        
         <View className="relative z-10 mt-8">
           <View className="flex-row items-center justify-between mb-4">
             <View>
-              <Text className="text-4xl font-black text-white mb-2" style={{
-                textShadowColor: 'rgba(0,0,0,0.3)',
-                textShadowOffset: { width: 0, height: 2 },
-                textShadowRadius: 4,
-              }}>
+              <Text
+                className="text-4xl font-black text-white mb-2"
+                style={{
+                  textShadowColor: "rgba(0,0,0,0.3)",
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 4,
+                }}
+              >
                 My Pets
               </Text>
               <View className="flex-row items-center">
                 <PawPrint size={16} color="white" />
-                <Text className="text-white/90 ml-2 font-medium">
-                  Manage your lovely pets
-                </Text>
+                <Text className="text-white/90 ml-2 font-medium">Manage your lovely pets</Text>
               </View>
             </View>
-            
             <View className="bg-white/20 p-4 rounded-2xl border border-white/30">
               <Text className="text-white font-bold text-2xl">{pets.length}</Text>
               <Text className="text-white/80 text-xs">Pets</Text>
             </View>
           </View>
 
-          {/* Enhanced Search Bar */}
-          <View 
+          <View
             className="flex-row items-center bg-white/95 rounded-2xl px-5 py-2 mt-2 border border-white/50"
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.1,
               shadowRadius: 16,
               elevation: 8,
             }}
           >
-            <View className=" p-2 rounded-xl mr-3">
+            <View className="p-2 rounded-xl mr-3">
               <Search size={20} color="#0891b2" />
             </View>
             <TextInput
@@ -349,18 +453,17 @@ const PetsScreen = () => {
         </View>
       </View>
 
-      {/* Enhanced Content */}
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={{ padding: 20, paddingTop: 10 }}
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
           <View className="flex-1 justify-center items-center mt-20">
             <LinearGradient
-              colors={['#ffffff', '#f8fafc']}
+              colors={["#ffffff", "#f8fafc"]}
               className="p-8 rounded-3xl border border-cyan-200"
               style={{
-                shadowColor: '#0891b2',
+                shadowColor: "#0891b2",
                 shadowOffset: { width: 0, height: 12 },
                 shadowOpacity: 0.15,
                 shadowRadius: 24,
@@ -387,10 +490,10 @@ const PetsScreen = () => {
         ) : (
           <View className="flex-1 justify-center items-center mt-20">
             <LinearGradient
-              colors={['#ffffff', '#f8fafc']}
+              colors={["#ffffff", "#f8fafc"]}
               className="p-12 rounded-3xl border border-gray-200 items-center"
               style={{
-                shadowColor: '#6b7280',
+                shadowColor: "#6b7280",
                 shadowOffset: { width: 0, height: 12 },
                 shadowOpacity: 0.15,
                 shadowRadius: 24,
@@ -409,12 +512,9 @@ const PetsScreen = () => {
             </LinearGradient>
           </View>
         )}
-        
-        {/* Bottom padding for floating button */}
         <View className="h-20" />
       </ScrollView>
 
-      {/* Enhanced Add Button */}
       <TouchableOpacity
         onPress={() => {
           resetForm();
@@ -422,54 +522,49 @@ const PetsScreen = () => {
         }}
         className="absolute bottom-8 right-8"
         style={{
-          shadowColor: '#0891b2',
+          shadowColor: "#0891b2",
           shadowOffset: { width: 0, height: 12 },
           shadowOpacity: 0.4,
           shadowRadius: 20,
           elevation: 12,
         }}
       >
-        <LinearGradient
-          colors={['#0891b2', '#06b6d4']}
-          className="rounded-full p-5"
-        >
+        <LinearGradient colors={["#0891b2", "#06b6d4"]} className="rounded-full p-5">
           <Plus color="white" size={28} />
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* Enhanced Modal */}
-      <Modal 
-        animationType="slide" 
-        transparent 
-        visible={modalVisible} 
+      <Modal
+        animationType="slide"
+        transparent
+        visible={modalVisible}
         onRequestClose={resetForm}
       >
         <View className="flex-1 bg-black/60">
-          <ScrollView 
-            contentContainerStyle={{ 
-              flexGrow: 1, 
-              justifyContent: 'center', 
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: "center",
               padding: 16,
-              paddingVertical: 40
+              paddingVertical: 40,
             }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             <LinearGradient
-              colors={['#ffffff', '#f8fafc']}
+              colors={["#ffffff", "#f8fafc"]}
               className="w-full max-w-sm mx-auto rounded-3xl p-8 border border-cyan-200"
               style={{
-                shadowColor: '#0891b2',
+                shadowColor: "#0891b2",
                 shadowOffset: { width: 0, height: 20 },
                 shadowOpacity: 0.3,
                 shadowRadius: 30,
                 elevation: 20,
               }}
             >
-              {/* Modal Header */}
               <View className="items-center mb-8">
                 <LinearGradient
-                  colors={['#0891b2', '#06b6d4']}
+                  colors={["#0891b2", "#06b6d4"]}
                   className="p-4 rounded-2xl mb-4"
                 >
                   <PawPrint size={32} color="white" />
@@ -482,7 +577,6 @@ const PetsScreen = () => {
                 </Text>
               </View>
 
-              {/* Form Fields */}
               <View className="space-y-4">
                 <View>
                   <Text className="text-gray-700 font-semibold mb-2 ml-1">Pet Name *</Text>
@@ -492,7 +586,7 @@ const PetsScreen = () => {
                     onChangeText={setName}
                     className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
@@ -509,7 +603,7 @@ const PetsScreen = () => {
                     onChangeText={setBreed}
                     className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
@@ -517,7 +611,7 @@ const PetsScreen = () => {
                     }}
                   />
                 </View>
-                
+
                 <View>
                   <Text className="text-gray-700 font-semibold mb-2 ml-1">Age</Text>
                   <View className="flex-row justify-between space-x-2">
@@ -529,7 +623,7 @@ const PetsScreen = () => {
                         keyboardType="numeric"
                         className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                         style={{
-                          shadowColor: '#000',
+                          shadowColor: "#000",
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.05,
                           shadowRadius: 4,
@@ -545,7 +639,7 @@ const PetsScreen = () => {
                         keyboardType="numeric"
                         className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                         style={{
-                          shadowColor: '#000',
+                          shadowColor: "#000",
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.05,
                           shadowRadius: 4,
@@ -555,7 +649,7 @@ const PetsScreen = () => {
                     </View>
                   </View>
                 </View>
-                
+
                 <View>
                   <Text className="text-gray-700 font-semibold mb-2 ml-1">Gender</Text>
                   <TextInput
@@ -564,7 +658,7 @@ const PetsScreen = () => {
                     onChangeText={setGender}
                     className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
@@ -581,7 +675,7 @@ const PetsScreen = () => {
                     onChangeText={setBirthdate}
                     className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
@@ -598,7 +692,7 @@ const PetsScreen = () => {
                     onChangeText={setAdoptionDate}
                     className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
@@ -615,7 +709,7 @@ const PetsScreen = () => {
                     onChangeText={setPhoto}
                     className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200 text-gray-800 font-medium"
                     style={{
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
@@ -625,13 +719,12 @@ const PetsScreen = () => {
                 </View>
               </View>
 
-              {/* Action Buttons */}
               <View className="flex-row justify-between mt-8 space-x-3">
                 <TouchableOpacity
                   onPress={resetForm}
                   className="flex-1 bg-gray-100 rounded-2xl py-4 right-1"
                   style={{
-                    shadowColor: '#000',
+                    shadowColor: "#000",
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.1,
                     shadowRadius: 8,
@@ -639,14 +732,13 @@ const PetsScreen = () => {
                   }}
                 >
                   <Text className="text-center text-gray-700 font-bold text-lg">Cancel</Text>
-                  
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={handleAddPet} // save function
+                  onPress={handleAddPet}
                   className="flex-1 bg-cyan-500 rounded-2xl py-4 left-1"
                   style={{
-                    shadowColor: '#0891b2',
+                    shadowColor: "#0891b2",
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.3,
                     shadowRadius: 8,
@@ -655,13 +747,21 @@ const PetsScreen = () => {
                 >
                   <Text className="text-center text-white font-bold text-lg">Save</Text>
                 </TouchableOpacity>
-              </View> 
+              </View>
             </LinearGradient>
           </ScrollView>
         </View>
       </Modal>
+
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertVisible(false)}
+      />
     </LinearGradient>
   );
 };
 
-export default PetsScreen; 
+export default PetsScreen;
