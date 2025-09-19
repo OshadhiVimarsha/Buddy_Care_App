@@ -145,16 +145,16 @@ const Home = () => {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="dark-content" backgroundColor="#06b6d4" translucent />
       
       <LinearGradient 
-        colors={["#06b6d4", "#0891b2"]} 
+        colors={["#06b6d4", "#06b6d4"]} 
         start={{ x: 0, y: 0 }} 
         end={{ x: 1, y: 1 }}
         className="pt-12 pb-8 px-5"
       >
         {/* Modern Header */}
-        <View className="flex-row justify-between items-center mb-4">
+        <View className="flex-row justify-between items-center mb-4 mt-6">
           <View className="flex-1">
             <Text className="text-white/80 text-sm font-medium">{getGreeting()}</Text>
             <Text className="text-white text-2xl font-bold mt-1">

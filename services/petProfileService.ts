@@ -12,13 +12,13 @@ export type PetProfile = {
   photoUrl?: string;
 };
 
-// 1️⃣ Create a new pet profile
+// 1 Create a new pet profile
 export const createPetProfile = async (pet: PetProfile) => {
   const docRef = await addDoc(collection(db, "petProfiles"), pet);
   return { id: docRef.id, ...pet };
 };
 
-// 2️⃣ Get all pet profiles
+// 2 Get all pet profiles
 export const getAllPetProfiles = async (): Promise<PetProfile[]> => {
   const querySnapshot = await getDocs(collection(db, "petProfiles"));
   const pets: PetProfile[] = [];
@@ -28,16 +28,21 @@ export const getAllPetProfiles = async (): Promise<PetProfile[]> => {
   return pets;
 };
 
-// 3️⃣ Update a pet profile
+// 3 Update a pet profile
 export const updatePetProfile = async (id: string, pet: Partial<PetProfile>) => {
   const docRef = doc(db, "petProfiles", id);
   await updateDoc(docRef, pet);
 };
 
-// 4️⃣ Delete a pet profile
-export const deletePetProfile = async (id: string) => {
-  const docRef = doc(db, "petProfiles", id);
-  await deleteDoc(docRef);
+// petProfileService.ts
+export const deletePetProfile = async (petId: string) => {
+  try {
+    await fetch(`YOUR_API_ENDPOINT/pets/${petId}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    throw new Error('Failed to delete pet profile');
+  }
 };
 
 export const getPetById = async (id: string): Promise<PetProfile | null> => {

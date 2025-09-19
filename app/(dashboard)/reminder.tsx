@@ -490,7 +490,7 @@ const ReminderScreen = () => {
       <StatusBar barStyle="light-content" backgroundColor="#06b6d4" />
       
       {/* Fixed Header with Cyan Background */}
-      <LinearGradient colors={["#06b6d4", "#0891b2"]} className="pt-12 pb-6 px-5 shadow-lg">
+      <LinearGradient colors={["#06b6d4", "#0891b2"]} className="pt-12 pb-6 px-5 shadow-lg mt-8">
         <View className="flex-row justify-between items-start mb-4">
           <View className="flex-1">
             <Text className="text-4xl font-bold text-white tracking-tight">Reminders ⏰</Text>
