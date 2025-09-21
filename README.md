@@ -1,50 +1,86 @@
-# Welcome to your Expo app 👋
+# BuddyCare Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A complete solution designed to easily manage your pet's care.
 
-## Get started
+---
 
-1. Install dependencies
+### About the Project
 
-   ```bash
-   npm install
-   ```
+**BuddyCare** is a mobile app that helps you manage your pet's health, training, and daily needs all in one place. It allows you to set reminders, track expenses, and get pet care advice.
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+### Features
 
-In the output, you'll find options to open the app in a
+* **Pet Profile**: Create a separate profile for each pet.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+* **Reminders**: Set up reminders for vaccinations, feeding times, and medication.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+* **Health Records**: Log important health data like vet visit dates and weight.
 
-## Get a fresh project
+* **Training Tracker**: Log training sessions and track progress.
 
-When you're ready, run:
+* **Emergency Infomation**: Store essential information like allergies for emergencies.
 
-```bash
-npm run reset-project
-```
+* **Multiple Pets Support**: Manage information for several pets from a single app.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+### Getting Started
 
-To learn more about developing your project with Expo, look at the following resources:
+To get a local copy of the project up and running, follow these simple steps.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+**Prerequisites:**
 
-## Join the community
+* **Node.js**
+* **npm**
+* **React Native**
 
-Join our community of developers creating universal apps.
+**Steps:**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1.  Clone the repository.
+
+    ```bash
+    git clone [Your GitHub repository link]
+    ```
+
+2.  Navigate to the project folder.
+
+    ```bash
+    cd Buddy_Care_App
+    ```
+
+3.  Install the required dependencies.
+
+    ```bash
+    npm install
+    ```
+
+4.  Run the React Native App.
+
+    ```bash
+    npx react-native run-android
+    ```
+    or for iOS:
+    ```bash
+    npx react-native run-ios
+    ```
+
+---
+
+### Built With
+
+* **React Native** - The framework used for mobile app development.
+* **Node.js** - The runtime environment for JavaScript.
+
+---
+
+### Contributing
+
+Contributions are welcome! If you have suggestions or want to improve this project, please fork the repository and submit a pull request.
+
+---
+
+### License
+
+**[https://github.com/OshadhiVimarsha/Buddy_Care_App]**
