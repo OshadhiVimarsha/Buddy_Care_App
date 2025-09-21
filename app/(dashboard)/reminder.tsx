@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal, Dimensions, StatusBar, Platform } from "react-native";
 import React, { useState, useEffect } from "react";
-import { Bell, Search, Plus, Calendar, Clock, Edit, Trash2, Filter, MoreVertical, CheckCircle2 } from "lucide-react-native";
+import { Bell, Search, Plus, Calendar, Clock, Edit, Trash2, Filter, MoreVertical, CheckCircle2, X } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   createReminder,
@@ -9,7 +9,6 @@ import {
   deleteReminder,
 } from "../../services/reminderService";
 import { Reminder } from "../../types/reminder";
-import AwesomeAlert from "react-native-awesome-alerts";
 import * as Notifications from 'expo-notifications';
 import { scheduleNotificationAsync, cancelScheduledNotificationAsync } from 'expo-notifications';
 
@@ -36,6 +35,151 @@ Notifications.setNotificationHandler({
   },
 });
 
+// AlertModal Component for Success/Error and Delete Confirmation
+const AlertModal = ({
+  visible,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  type = 'info',
+  showCancel = false,
+  confirmText = 'OK',
+  cancelText = 'Cancel',
+  isLoading = false,
+}) => {
+  const getAlertConfig = () => {
+    switch (type) {
+      case 'success':
+        return {
+          icon: CheckCircle2,
+          colors: ['#dcfce7', '#16a34a', '#15803d'],
+          bgColors: ['#ffffff', '#f0fdf4', '#ffffff'],
+          shadowColor: '#16a34a',
+        };
+      case 'error':
+        return {
+          icon: Bell,
+          colors: ['#fecaca', '#ef4444', '#dc2626'],
+          bgColors: ['#ffffff', '#fef2f2', '#ffffff'],
+          shadowColor: '#ef4444',
+        };
+      case 'warning':
+        return {
+          icon: Bell,
+          colors: ['#fef3c7', '#f59e0b', '#d97706'],
+          bgColors: ['#ffffff', '#fffbeb', '#ffffff'],
+          shadowColor: '#f59e0b',
+        };
+      default:
+        return {
+          icon: Bell,
+          colors: ['#bfdbfe', '#06b6d4', '#0891b2'],
+          bgColors: ['#ffffff', '#f0f9ff', '#ffffff'],
+          shadowColor: '#0891b2',
+        };
+    }
+  };
+
+  const config = getAlertConfig();
+  const IconComponent = config.icon;
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View className="flex-1 bg-black/60 justify-center items-center px-4">
+        <LinearGradient
+          colors={config.bgColors}
+          className="w-full max-w-sm rounded-3xl p-8 border border-cyan-200"
+          style={{
+            shadowColor: config.shadowColor,
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.3,
+            shadowRadius: 20,
+            elevation: 12,
+          }}
+        >
+          <TouchableOpacity
+            onPress={onClose}
+            className="absolute top-4 right-4 bg-gray-100 rounded-full p-2"
+          >
+            <X size={20} color="#6b7280" />
+          </TouchableOpacity>
+
+          <View className="items-center mb-6">
+            <LinearGradient
+              colors={config.colors}
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              style={{
+                shadowColor: config.shadowColor,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 8,
+              }}
+            >
+              <IconComponent size={28} color="white" />
+            </LinearGradient>
+            <Text className="text-2xl font-bold text-gray-800 mb-2 text-center">
+              {title}
+            </Text>
+            <Text className="text-gray-600 text-center text-base leading-relaxed">
+              {message}
+            </Text>
+          </View>
+
+          <View className="flex-row justify-between space-x-3">
+            {showCancel && (
+              <TouchableOpacity
+                onPress={onClose}
+                disabled={isLoading}
+                className="flex-1 bg-gray-100 rounded-2xl py-4"
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }}
+              >
+                <Text className="text-center text-gray-700 font-bold text-base">
+                  {cancelText}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={onConfirm || onClose}
+              disabled={isLoading}
+              className="flex-1 rounded-2xl py-4"
+              style={{
+                shadowColor: config.shadowColor,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6,
+              }}
+            >
+              <LinearGradient
+                colors={config.colors.slice(1)}
+                className="rounded-2xl py-4"
+              >
+                <Text className="text-center text-white font-bold text-base">
+                  {isLoading ? 'Processing...' : confirmText}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </View>
+    </Modal>
+  );
+};
+
 const ReminderScreen = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,10 +191,28 @@ const ReminderScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Alerts
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  // Alert configuration
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    showCancel: boolean;
+    onConfirm: (() => void) | null;
+    confirmText: string;
+    cancelText: string;
+    isLoading: boolean;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+    showCancel: false,
+    onConfirm: null,
+    confirmText: 'OK',
+    cancelText: 'Cancel',
+    isLoading: false,
+  });
   const [reminderToDelete, setReminderToDelete] = useState<string | null>(null);
 
   // Request notification permissions
@@ -60,15 +222,33 @@ const ReminderScreen = () => {
         const { status } = await Notifications.requestPermissionsAsync();
         if (status !== 'granted') {
           console.warn("Notification permissions not granted:", status);
-          setAlertMessage("Notifications need permission to send reminders. Please enable notifications in your device settings.");
-          setShowAlert(true);
+          setAlertConfig({
+            visible: true,
+            title: 'Permission Required',
+            message: 'Notifications need permission to send reminders. Please enable notifications in your device settings.',
+            type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+            showCancel: false,
+            confirmText: 'OK',
+            onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+            cancelText: 'Cancel',
+            isLoading: false,
+          });
         } else {
           console.log("Notification permissions granted");
         }
       } catch (error) {
         console.error("Error requesting notification permissions:", error);
-        setAlertMessage("Failed to request notification permissions.");
-        setShowAlert(true);
+        setAlertConfig({
+          visible: true,
+          title: 'Error',
+          message: `Failed to request notification permissions: ${(error as Error).message || 'Unknown error'}`,
+          type: 'error' as 'info' | 'success' | 'warning' | 'error',
+          showCancel: false,
+          confirmText: 'OK',
+          onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+          cancelText: 'Cancel',
+          isLoading: false,
+        });
       }
     })();
   }, []);
@@ -148,8 +328,17 @@ const ReminderScreen = () => {
       console.log("Valid reminders:", JSON.stringify(validReminders, null, 2));
     } catch (error) {
       console.error("Failed to fetch reminders:", error);
-      setAlertMessage(`Failed to load reminders: ${error.message || 'Unknown error'}`);
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: `Failed to load reminders: ${(error as Error).message || 'Unknown error'}`,
+        type: 'error' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -168,8 +357,17 @@ const ReminderScreen = () => {
       const timeMatch = reminder.time.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
       if (!timeMatch) {
         console.warn(`Invalid time format for notification: ${reminder.time}`);
-        setAlertMessage("Invalid time format for notification.");
-        setShowAlert(true);
+        setAlertConfig({
+          visible: true,
+          title: 'Warning',
+          message: 'Invalid time format for notification.',
+          type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+          showCancel: false,
+          confirmText: 'OK',
+          onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+          cancelText: 'Cancel',
+          isLoading: false,
+        });
         return false;
       }
 
@@ -177,8 +375,17 @@ const ReminderScreen = () => {
       const dateMatch = reminder.date.trim().match(/^\d{4}-\d{2}-\d{2}$/);
       if (!dateMatch) {
         console.warn(`Invalid date format for notification: ${reminder.date}`);
-        setAlertMessage("Invalid date format for notification.");
-        setShowAlert(true);
+        setAlertConfig({
+          visible: true,
+          title: 'Warning',
+          message: 'Invalid date format for notification.',
+          type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+          showCancel: false,
+          confirmText: 'OK',
+          onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+          cancelText: 'Cancel',
+          isLoading: false,
+        });
         return false;
       }
 
@@ -196,21 +403,30 @@ const ReminderScreen = () => {
 
       if (reminderDateTime <= now) {
         console.warn(`Cannot schedule notification for past reminder: ${reminder.id}`);
-        setAlertMessage("Cannot schedule notification for a past date/time. Reminder saved without notification.");
-        setShowAlert(true);
+        setAlertConfig({
+          visible: true,
+          title: 'Warning',
+          message: 'Cannot schedule notification for a past date/time. Reminder saved without notification.',
+          type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+          showCancel: false,
+          confirmText: 'OK',
+          onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+          cancelText: 'Cancel',
+          isLoading: false,
+        });
         return false;
       }
 
-      // Schedule notification 1 hour before the reminder time (පැයකට කලින්)
+      // Schedule notification 1 hour before the reminder time
       const notificationTime1HourBefore = new Date(reminderDateTime.getTime() - 60 * 60 * 1000);
       
-      // Schedule notification 30 minutes before the reminder time (මිනිත්තු 30කට කලින්)
+      // Schedule notification 30 minutes before the reminder time
       const notificationTime30MinBefore = new Date(reminderDateTime.getTime() - 30 * 60 * 1000);
       
-      // Schedule notification 10 minutes before the reminder time (මිනිත්තු 10කට කලින්)
+      // Schedule notification 10 minutes before the reminder time
       const notificationTime10MinBefore = new Date(reminderDateTime.getTime() - 10 * 60 * 1000);
       
-      // Schedule notification at the exact reminder time (හරියටම reminder time එකේ)
+      // Schedule notification at the exact reminder time
       const notificationTimeExact = new Date(reminderDateTime.getTime());
 
       console.log("Notification times (IST):");
@@ -222,7 +438,7 @@ const ReminderScreen = () => {
       // Array to store all notification IDs
       const notificationIds = [];
 
-      // Schedule 1 hour before notification (පැයකට කලින්)
+      // Schedule 1 hour before notification
       if (notificationTime1HourBefore > now) {
         const trigger1 = { date: notificationTime1HourBefore };
         const notificationId1 = await scheduleNotificationAsync({
@@ -238,7 +454,7 @@ const ReminderScreen = () => {
         console.log(`1-hour notification scheduled with ID: ${notificationId1}`);
       }
 
-      // Schedule 30 minutes before notification (මිනිත්තු 30කට කලින්)
+      // Schedule 30 minutes before notification
       if (notificationTime30MinBefore > now) {
         const trigger2 = { date: notificationTime30MinBefore };
         const notificationId2 = await scheduleNotificationAsync({
@@ -254,7 +470,7 @@ const ReminderScreen = () => {
         console.log(`30-min notification scheduled with ID: ${notificationId2}`);
       }
 
-      // Schedule 10 minutes before notification (මිනිත්තු 10කට කලින්)
+      // Schedule 10 minutes before notification
       if (notificationTime10MinBefore > now) {
         const trigger3 = { date: notificationTime10MinBefore };
         const notificationId3 = await scheduleNotificationAsync({
@@ -270,7 +486,7 @@ const ReminderScreen = () => {
         console.log(`10-min notification scheduled with ID: ${notificationId3}`);
       }
 
-      // Schedule exact time notification (හරියටම reminder time එකේ)
+      // Schedule exact time notification
       const trigger4 = { date: notificationTimeExact };
       const notificationId4 = await scheduleNotificationAsync({
         content: {
@@ -293,8 +509,17 @@ const ReminderScreen = () => {
       return true;
     } catch (error) {
       console.error("Error scheduling notification:", error);
-      setAlertMessage(`Failed to schedule notification: ${error.message || 'Unknown error'}. Reminder saved without notification.`);
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: `Failed to schedule notification: ${(error as Error).message || 'Unknown error'}`,
+        type: 'error' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return false;
     }
   };
@@ -325,8 +550,17 @@ const ReminderScreen = () => {
     // Validate title (cannot be empty or only spaces)
     if (!title || title.trim().length === 0) {
       console.warn("Invalid title: empty or only spaces");
-      setAlertMessage("Please enter a valid reminder title.");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Warning',
+        message: 'Please enter a valid reminder title.',
+        type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return;
     }
 
@@ -334,8 +568,17 @@ const ReminderScreen = () => {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!date.trim().match(dateRegex)) {
       console.warn("Invalid date format:", date);
-      setAlertMessage("Please enter date in YYYY-MM-DD format (e.g., 2025-09-18).");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Warning',
+        message: 'Please enter date in YYYY-MM-DD format (e.g., 2025-09-18).',
+        type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return;
     }
 
@@ -344,16 +587,34 @@ const ReminderScreen = () => {
     const timeMatch = time.trim().match(timeRegex);
     if (!timeMatch) {
       console.warn("Invalid time format:", time);
-      setAlertMessage("Please enter time in HH:MM AM/PM format (e.g., 10:00 AM).");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Warning',
+        message: 'Please enter time in HH:MM AM/PM format (e.g., 10:00 AM).',
+        type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return;
     }
 
     const [_, hours, minutes, period] = timeMatch;
     if (!period) {
       console.error("Period is undefined for time:", time);
-      setAlertMessage("Invalid time format: AM/PM missing.");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Warning',
+        message: 'Invalid time format: AM/PM missing.',
+        type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return;
     }
     let hours24 = parseInt(hours);
@@ -364,8 +625,17 @@ const ReminderScreen = () => {
     const reminderDateTime = new Date(`${date.trim()}T${hours24.toString().padStart(2, '0')}:${minutes}:00+05:30`);
     if (isNaN(reminderDateTime.getTime())) {
       console.warn("Invalid date/time:", date, time);
-      setAlertMessage("Invalid date/time. Please check your input.");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Warning',
+        message: 'Invalid date/time. Please check your input.',
+        type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return;
     }
 
@@ -374,8 +644,17 @@ const ReminderScreen = () => {
     console.log("Current date/time (IST):", now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
     if (reminderDateTime <= now) {
       console.warn("Past date/time entered:", date, time);
-      setAlertMessage("Please enter a future date/time.");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Warning',
+        message: 'Please enter a future date/time.',
+        type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       return;
     }
 
@@ -393,42 +672,89 @@ const ReminderScreen = () => {
         reminderId = currentReminder.id;
         const updatedReminder = { ...currentReminder, ...reminderData };
         const notificationScheduled = await scheduleNotification(updatedReminder as Reminder);
-        setAlertMessage(notificationScheduled ? "Reminder updated successfully with multiple notifications!" : "Reminder updated, but notifications not scheduled.");
+        setAlertConfig({
+          visible: true,
+          title: 'Success',
+          message: notificationScheduled ? 'Reminder updated successfully with multiple notifications!' : 'Reminder updated, but notifications not scheduled.',
+          type: 'success' as 'info' | 'success' | 'warning' | 'error',
+          showCancel: false,
+          confirmText: 'OK',
+          onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+          cancelText: 'Cancel',
+          isLoading: false,
+        });
       } else {
         console.log("Creating new reminder");
         const newReminder = await createReminder(reminderData as Reminder);
         reminderId = newReminder.id;
         const notificationScheduled = await scheduleNotification(newReminder);
-        setAlertMessage(notificationScheduled ? "Reminder saved successfully with multiple notifications!" : "Reminder saved, but notifications not scheduled.");
+        setAlertConfig({
+          visible: true,
+          title: 'Success',
+          message: notificationScheduled ? 'Reminder saved successfully with multiple notifications!' : 'Reminder saved, but notifications not scheduled.',
+          type: 'success' as 'info' | 'success' | 'warning' | 'error',
+          showCancel: false,
+          confirmText: 'OK',
+          onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+          cancelText: 'Cancel',
+          isLoading: false,
+        });
       }
-      setShowAlert(true);
       resetForm();
       fetchReminders();
     } catch (error) {
       console.error("Failed to save reminder:", error);
-      setAlertMessage(`Failed to save reminder: ${error.message || 'Unknown error'}`);
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: `Failed to save reminder: ${(error as Error).message || 'Unknown error'}`,
+        type: 'error' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   // Handle reminder deletion
-  const handleDeleteReminder = async (id: string, notificationIds: {id: string, type: string}[] = []) => {
+  const handleDeleteReminder = async (id: string, notificationIds: { id: string; type: string }[] = []) => {
     setIsLoading(true);
     try {
       console.log(`Deleting reminder ${id}`);
       await cancelScheduledNotification(id, notificationIds);
       await deleteReminder(id);
-      setAlertMessage("Reminder deleted successfully!");
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Success',
+        message: 'Reminder deleted successfully!',
+        type: 'success' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
       fetchReminders();
     } catch (error) {
       console.error("Failed to delete reminder:", error);
-      setAlertMessage(`Failed to delete reminder: ${error.message || 'Unknown error'}`);
-      setShowAlert(true);
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: `Failed to delete reminder: ${(error as Error).message || 'Unknown error'}`,
+        type: 'error' as 'info' | 'success' | 'warning' | 'error',
+        showCancel: false,
+        confirmText: 'OK',
+        onConfirm: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+        cancelText: 'Cancel',
+        isLoading: false,
+      });
     } finally {
       setIsLoading(false);
+      setReminderToDelete(null);
     }
   };
 
@@ -605,7 +931,22 @@ const ReminderScreen = () => {
                       <TouchableOpacity
                         onPress={() => {
                           setReminderToDelete(reminder.id!);
-                          setConfirmDelete(true);
+                          setAlertConfig({
+                            visible: true,
+                            title: 'Confirm Delete 🗑️',
+                            message: 'Are you sure you want to delete this reminder? This action cannot be undone.',
+                            type: 'warning' as 'info' | 'success' | 'warning' | 'error',
+                            showCancel: true,
+                            confirmText: 'Delete',
+                            cancelText: 'Keep It',
+                            onConfirm: () => {
+                              if (reminderToDelete) {
+                                const reminder = reminders.find(r => r.id === reminderToDelete);
+                                handleDeleteReminder(reminderToDelete, reminder?.notificationIds || []);
+                              }
+                            },
+                            isLoading: false,
+                          });
                         }}
                         className="bg-red-50 rounded-xl px-4 py-2 flex-row items-center"
                       >
@@ -651,7 +992,7 @@ const ReminderScreen = () => {
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* Modal */}
+      {/* Modal for Adding/Editing Reminder */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={resetForm}>
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white rounded-t-3xl shadow-2xl" style={{ maxHeight: '80%' }}>
@@ -740,48 +1081,18 @@ const ReminderScreen = () => {
         </View>
       </Modal>
 
-      {/* Success / Error Alert */}
-      <AwesomeAlert
-        show={showAlert}
-        showProgress={false}
-        title="Notification"
-        message={alertMessage}
-        closeOnTouchOutside={true}
-        closeOnHardwareBackPress={true}
-        showConfirmButton={true}
-        confirmText="OK"
-        confirmButtonColor="#0891b2"
-        titleStyle={{ fontSize: 18, fontWeight: 'bold' }}
-        messageStyle={{ fontSize: 16, textAlign: 'center', margin: 10 }}
-        onConfirmPressed={() => {
-          setShowAlert(false);
-        }}
-      />
-
-      {/* Delete Confirmation Alert */}
-      <AwesomeAlert
-        show={confirmDelete}
-        showProgress={false}
-        title="Confirm Delete 🗑️"
-        message="Are you sure you want to delete this reminder? This action cannot be undone."
-        closeOnTouchOutside={false}
-        closeOnHardwareBackPress={false}
-        showCancelButton={true}
-        showConfirmButton={true}
-        cancelText="Keep It"
-        confirmText="Delete"
-        confirmButtonColor="#ef4444"
-        cancelButtonColor="#6b7280"
-        titleStyle={{ fontSize: 18, fontWeight: 'bold' }}
-        messageStyle={{ fontSize: 16, textAlign: 'center', margin: 10 }}
-        onCancelPressed={() => setConfirmDelete(false)}
-        onConfirmPressed={() => {
-          if (reminderToDelete) {
-            const reminder = reminders.find(r => r.id === reminderToDelete);
-            handleDeleteReminder(reminderToDelete, reminder?.notificationIds || []);
-          }
-          setConfirmDelete(false);
-        }}
+      {/* Alert Modal */}
+      <AlertModal
+        visible={alertConfig.visible}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+        onConfirm={alertConfig.onConfirm || (() => setAlertConfig({ ...alertConfig, visible: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        showCancel={alertConfig.showCancel}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        isLoading={alertConfig.isLoading}
       />
     </View>
   );
