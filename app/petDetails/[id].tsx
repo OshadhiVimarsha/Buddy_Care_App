@@ -37,10 +37,11 @@ import {
   TrendingUp,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { LineChart } from "react-native-chart-kit";
 
 const { width, height } = Dimensions.get("window");
 
-// Custom Alert Modal
+// Custom Alert Modal (unchanged)
 const CustomAlertModal = ({ 
   visible, 
   onClose, 
@@ -239,7 +240,7 @@ const CustomAlertModal = ({
   );
 };
 
-// Form Modal Component
+// Form Modal Component (unchanged)
 const FormModal = ({ visible, onClose, onSave, title, children, isLoading = false }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -416,9 +417,9 @@ const PetDetailsScreen = () => {
     visible: false,
     title: '',
     message: '',
-    type: 'info',
+    type: 'info' as 'info' | 'success' | 'warning' | 'error',
     showCancel: false,
-    onConfirm: null,
+    onConfirm: null as (() => void) | null,
     confirmText: 'OK',
     cancelText: 'Cancel'
   });
@@ -428,7 +429,7 @@ const PetDetailsScreen = () => {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  const showAlert = (title: string, message: string, type = 'info', options = {}) => {
+  const showAlert = (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info', options = {}) => {
     setAlertConfig({
       visible: true,
       title,
@@ -501,7 +502,11 @@ const PetDetailsScreen = () => {
       updatedPet.healthInfo = { weightHistory: [], allergies: [], conditions: [] };
     }
 
-    const newWeight = { date: weightForm.date, weight };
+    const newWeight: WeightEntry = { 
+      id: editingWeightIndex >= 0 ? updatedPet.healthInfo.weightHistory[editingWeightIndex].id : Date.now().toString(),
+      date: weightForm.date, 
+      weight 
+    };
 
     if (editingWeightIndex >= 0) {
       updatedPet.healthInfo.weightHistory[editingWeightIndex] = newWeight;
@@ -596,12 +601,12 @@ const PetDetailsScreen = () => {
       updatedPet.vetVisits = [];
     }
 
-    const newVisit = {
+    const newVisit: VetVisit = {
       date: vetVisitForm.date,
       reason: vetVisitForm.reason,
       notes: vetVisitForm.notes || undefined,
       clinicInfo: (vetVisitForm.clinicName || vetVisitForm.address || vetVisitForm.phone || vetVisitForm.doctorName) ? {
-        clinicName: vetVisitForm.clinicName,
+        clinicName: vetVisitForm.clinicName || undefined,
         address: vetVisitForm.address || undefined,
         phone: vetVisitForm.phone || undefined,
         doctorName: vetVisitForm.doctorName || undefined,
@@ -658,7 +663,7 @@ const PetDetailsScreen = () => {
       updatedPet.trainingLog = [];
     }
 
-    const newTraining = {
+    const newTraining: TrainingEntry = {
       task: trainingForm.task,
       date: trainingForm.date,
       progress,
@@ -863,6 +868,25 @@ const PetDetailsScreen = () => {
     );
   };
 
+  // Prepare data for weight history chart
+  const weightHistory = pet?.healthInfo?.weightHistory || [];
+  const sortedWeightHistory = [...weightHistory].sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  const chartData = {
+    labels: sortedWeightHistory.map(entry => {
+      const date = new Date(entry.date);
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }),
+    datasets: [
+      {
+        data: sortedWeightHistory.map(entry => entry.weight),
+        color: (opacity = 1) => `rgba(8, 145, 178, ${opacity})`, // Cyan color
+        strokeWidth: 2
+      }
+    ]
+  };
+
   if (loading) {
     return (
       <LinearGradient colors={["#f0f9ff", "#e0f2fe", "#f8fafc"]} className="flex-1">
@@ -1037,11 +1061,11 @@ const PetDetailsScreen = () => {
                       </View>
                     </View>
                   )}
-                  {pet.birthDate && (
+                  {pet.birthdate && (
                     <View className="flex-row justify-between items-center mt-2">
                       <Text className="text-gray-600 font-medium">Birthdate -</Text>
                       <View className="bg-blue-100 px-3 py-1 rounded-full">
-                        <Text className="text-blue-700 font-bold">{pet.birthDate}</Text>
+                        <Text className="text-blue-700 font-bold">{pet.birthdate}</Text>
                       </View>
                     </View>
                   )}
@@ -1075,29 +1099,63 @@ const PetDetailsScreen = () => {
                     <Text className="text-white font-medium text-xs">Add</Text>
                   </TouchableOpacity>
                 </View>
-                {pet.healthInfo?.weightHistory?.length > 0 ? (
-                  pet.healthInfo.weightHistory.map((weight, idx) => (
-                    <View key={idx} className="bg-gray-50 p-3 rounded-2xl mb-2 flex-row justify-between items-center">
-                      <View>
-                        <Text className="text-gray-800 font-bold">{weight.weight} kg</Text>
-                        <Text className="text-gray-600 text-sm">{weight.date}</Text>
-                      </View>
-                      <View className="flex-row space-x-2">
-                        <TouchableOpacity
-                          onPress={() => handleEditWeight(idx)}
-                          className="bg-blue-500 p-2 rounded-lg right-2"
-                        >
-                          <Edit3 size={14} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeleteWeight(idx)}
-                          className="bg-red-500 p-2 rounded-lg"
-                        >
-                          <Trash2 size={14} color="white" />
-                        </TouchableOpacity>
-                      </View>
+                {weightHistory.length > 0 ? (
+                  <>
+                    <View className="mb-4">
+                      <LineChart
+                        data={chartData}
+                        width={width - 80} // Adjust to fit within padding
+                        height={220}
+                        yAxisLabel=""
+                        yAxisSuffix="kg"
+                        chartConfig={{
+                          backgroundColor: "#ffffff",
+                          backgroundGradientFrom: "#f0f9ff",
+                          backgroundGradientTo: "#f0f9ff",
+                          decimalPlaces: 1,
+                          color: (opacity = 1) => `rgba(8, 145, 178, ${opacity})`,
+                          labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`, // Gray-800
+                          style: {
+                            borderRadius: 16,
+                          },
+                          propsForDots: {
+                            r: "6",
+                            strokeWidth: "2",
+                            stroke: "#0891b2",
+                          },
+                        }}
+                        bezier
+                        style={{
+                          marginVertical: 8,
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          borderColor: '#e5e7eb', // Gray-200
+                        }}
+                      />
                     </View>
-                  ))
+                    {pet.healthInfo!.weightHistory.map((weight, idx) => (
+                      <View key={weight.id} className="bg-gray-50 p-3 rounded-2xl mb-2 flex-row justify-between items-center">
+                        <View>
+                          <Text className="text-gray-800 font-bold">{weight.weight} kg</Text>
+                          <Text className="text-gray-600 text-sm">{weight.date}</Text>
+                        </View>
+                        <View className="flex-row space-x-2">
+                          <TouchableOpacity
+                            onPress={() => handleEditWeight(idx)}
+                            className="bg-blue-500 p-2 rounded-lg"
+                          >
+                            <Edit3 size={14} color="white" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteWeight(idx)}
+                            className="bg-red-500 p-2 rounded-lg"
+                          >
+                            <Trash2 size={14} color="white" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </>
                 ) : (
                   <Text className="text-gray-500 italic">No weight records</Text>
                 )}
@@ -1218,7 +1276,7 @@ const PetDetailsScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteVetVisit(idx)}
-                          className="bg-red-500 p-2 rounded-lg left-2"
+                          className="bg-red-500 p-2 rounded-lg"
                         >
                           <Trash2 size={14} color="white" />
                         </TouchableOpacity>
@@ -1267,7 +1325,7 @@ const PetDetailsScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteTraining(idx)}
-                          className="bg-red-500 p-2 rounded-lg left-2"
+                          className="bg-red-500 p-2 rounded-lg"
                         >
                           <Trash2 size={14} color="white" />
                         </TouchableOpacity>
