@@ -23,7 +23,7 @@ import { PetProfile } from "@/types/petProfile";
 
 const { width } = Dimensions.get("window");
 
-// Custom Alert Component
+// Custom Alert Component (unchanged)
 const CustomAlert = ({
   visible,
   title,
@@ -236,7 +236,6 @@ const PetsScreen = () => {
       healthInfo: { weightHistory: [], allergies: [], conditions: [] },
       vetVisits: [],
       trainingLog: [],
-      reminders: [],
     };
 
     try {
@@ -254,6 +253,43 @@ const PetsScreen = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // New function to handle pet deletion
+  const handleDeletePet = async (petId: string) => {
+    try {
+      setIsLoading(true);
+      await deletePetProfile(petId);
+      showAlert("Success", "Pet deleted successfully!", [
+        { text: "OK", onPress: () => {} },
+      ]);
+      fetchPets(); // Refresh the pet list
+    } catch {
+      showAlert("Error", "Failed to delete pet.", [
+        { text: "OK", onPress: () => {} },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmDeletePet = (pet: PetProfile) => {
+    showAlert(
+      "Confirm Delete",
+      `Are you sure you want to delete ${pet.name}'s profile? This action cannot be undone.`,
+      [
+        { text: "Cancel", onPress: () => {}, style: "cancel" },
+        {
+          text: "Delete",
+          onPress: () => {
+            if (pet.id) {
+              handleDeletePet(pet.id);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
   };
 
   const filteredPets = pets.filter(
@@ -370,19 +406,34 @@ const PetsScreen = () => {
 
             <View className="flex-col items-center space-y-3">
               {pet.id && (
-                <TouchableOpacity
-                  onPress={() => router.push(`/petDetails/${pet.id}`)}
-                  className="bg-cyan-500 p-3 rounded-2xl border border-cyan-300"
-                  style={{
-                    shadowColor: "#0891b2",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 6,
-                  }}
-                >
-                  <Eye color="white" size={18} />
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    onPress={() => router.push(`/petDetails/${pet.id}`)}
+                    className="bg-cyan-500 p-3 rounded-2xl border border-cyan-300"
+                    style={{
+                      shadowColor: "#0891b2",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 6,
+                    }}
+                  >
+                    <Eye color="white" size={18} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => confirmDeletePet(pet)}
+                    className="bg-red-500 p-3 rounded-2xl border border-red-300 mt-3"
+                    style={{
+                      shadowColor: "#dc2626",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 6,
+                    }}
+                  >
+                    <Trash2 color="white" size={18} />
+                  </TouchableOpacity>
+                </>
               )}
             </View>
           </View>

@@ -1148,7 +1148,7 @@ const PetDetailsScreen = () => {
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => handleDeleteWeight(idx)}
-                            className="bg-red-500 p-2 rounded-lg"
+                            className="bg-red-500 p-2 rounded-lg left-2"
                           >
                             <Trash2 size={14} color="white" />
                           </TouchableOpacity>
@@ -1276,7 +1276,7 @@ const PetDetailsScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteVetVisit(idx)}
-                          className="bg-red-500 p-2 rounded-lg"
+                          className="bg-red-500 p-2 rounded-lg left-2"
                         >
                           <Trash2 size={14} color="white" />
                         </TouchableOpacity>
@@ -1325,7 +1325,7 @@ const PetDetailsScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteTraining(idx)}
-                          className="bg-red-500 p-2 rounded-lg"
+                          className="bg-red-500 p-2 rounded-lg left-2"
                         >
                           <Trash2 size={14} color="white" />
                         </TouchableOpacity>
