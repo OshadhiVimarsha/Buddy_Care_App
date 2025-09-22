@@ -87,3 +87,6 @@ Contributions are welcome! If you have suggestions or want to improve this proje
 
 ### Youtube Link
 **https://youtu.be/g6oRq68oGkY**
+
+### Github release
+**https://github.com/OshadhiVimarsha/Buddy_Care_App/releases/tag/v1.0.0**
